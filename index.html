@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<!-- DayDun May 2017 -->
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>Terminal</title>
+    <link href="https://fonts.googleapis.com/css?family=Share+Tech+Mono" rel="stylesheet">
+    <style>
+      @font-face {
+        font-family: IbmVga8;
+        src: url(Px437_IBM_VGA8.ttf);
+      }
+      
+      #terminal {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+      }
+      
+      canvas {
+        zoom: 200%;
+        image-rendering: pixelated;
+        border: 2px solid #000;
+      }
+    </style>
+    <script src="jailed/jailed.js"></script>
+    <script src="main.js"></script>
+  </head>
+  <body>
+    <h1 style="font-family: IbmVga8; font-size: 64px">test</h1>
+    <div id="terminal">
+      <canvas id="canvas"></canvas>
+    </div>
+  </body>
+</html>
