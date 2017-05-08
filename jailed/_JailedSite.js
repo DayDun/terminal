@@ -213,16 +213,6 @@
      * @returns {Array} wrapped arguments
      */
     JailedSite.prototype._wrap = function(args) {
-        function treeSearch(obj) {
-            for (var i in obj) {
-                if (args[i] instanceof Window) {
-                    obj[i] = void 0;
-                } else if (typeof obj[i] == "object") {
-                    treeSearch(obj[i]);
-                }
-            }
-        }
-        
         var wrapped = [];
         var callbacks = {};
         var callbacksPresent = false;
@@ -232,12 +222,6 @@
                 wrapped[i] = {type: 'callback', num : i};
                 callbacksPresent = true;
             } else {
-                // Prevent error from sending `this`, there is probably a better solution :c
-                /*if (args[i] instanceof Window) {
-                    args[i] = void 0;
-                } else if (typeof args[i] == "object") {
-                    treeSearch(args[i]);
-                }*/
                 wrapped[i] = {type: 'argument', value : args[i]};
             }
         }

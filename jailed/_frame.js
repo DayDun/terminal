@@ -56,7 +56,7 @@ var initWebworkerPlugin = function() {
     var fallbackTimeout = setTimeout(function() {
         worker.terminate();
         initIframePlugin();
-    }, 3000);
+    }, 300);
 
     // forwarding messages between the worker and parent window
     worker.addEventListener('message', function(m) {
