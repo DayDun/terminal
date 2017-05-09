@@ -20,7 +20,22 @@
  */
 
 
-var __jailed__path__ = window.location.href + "jailed/";
+var __jailed__path__;
+var __is__node__ = ((typeof process !== 'undefined') &&
+                    (!process.browser) &&
+                    (process.release.name.search(/node|io.js/) !== -1));
+if (__is__node__) {
+    // Node.js
+    __jailed__path__ = __dirname + '/';
+} else {
+    // web
+    var scripts = document.getElementsByTagName('script');
+    __jailed__path__ = scripts[scripts.length-1].src
+        .split('?')[0]
+        .split('/')
+        .slice(0, -1)
+        .join('/')+'/';
+}
 
 
 (function (root, factory) {
@@ -111,6 +126,15 @@ var __jailed__path__ = window.location.href + "jailed/";
 
 
     /**
+     * Initializes the library site for Node.js environment (loads
+     * _JailedSite.js)
+     */
+    var initNode = function() {
+        require('./_JailedSite.js');
+    }
+
+
+    /**
      * Initializes the library site for web environment (loads
      * _JailedSite.js)
      */
@@ -160,6 +184,109 @@ var __jailed__path__ = window.location.href + "jailed/";
 
     var BasicConnection;
       
+    /**
+     * Creates the platform-dependent BasicConnection object in the
+     * Node.js environment
+     */
+    var basicConnectionNode = function() {
+        var childProcess = require('child_process');
+
+        /**
+         * Platform-dependent implementation of the BasicConnection
+         * object, initializes the plugin site and provides the basic
+         * messaging-based connection with it
+         * 
+         * For Node.js the plugin is created as a forked process
+         */
+        BasicConnection = function() {
+            // in Node.js always has a subprocess
+            this.dedicatedThread = true;
+            this._disconnected = false;
+            this._messageHandler = function(){};
+            this._disconnectHandler = function(){};
+
+            this._process = childProcess.fork(
+                __jailed__path__+'_pluginNode.js'
+            );
+
+            var me = this;
+            this._process.on('message', function(m){
+                me._messageHandler(m);
+            });
+
+            this._process.on('exit', function(m){
+                me._disconnected = true;
+                me._disconnectHandler(m);
+            });
+        }
+
+
+        /**
+         * Sets-up the handler to be called upon the BasicConnection
+         * initialization is completed.
+         * 
+         * For Node.js the connection is fully initialized within the
+         * constructor, so simply calls the provided handler.
+         * 
+         * @param {Function} handler to be called upon connection init
+         */
+        BasicConnection.prototype.whenInit = function(handler) {
+            handler();
+        }
+
+
+        /**
+         * Sends a message to the plugin site
+         * 
+         * @param {Object} data to send
+         */
+        BasicConnection.prototype.send = function(data) {
+            if (!this._disconnected) {
+                this._process.send(data);
+            }
+        }
+
+
+        /**
+         * Adds a handler for a message received from the plugin site
+         * 
+         * @param {Function} handler to call upon a message
+         */
+        BasicConnection.prototype.onMessage = function(handler) {
+            this._messageHandler = function(data) {
+                // broken stack would break the IPC in Node.js
+                try {
+                    handler(data);
+                } catch (e) {
+                    console.error();
+                    console.error(e.stack);
+                }
+            }
+        }
+
+
+        /**
+         * Adds a handler for the event of plugin disconnection
+         * (= plugin process exit)
+         * 
+         * @param {Function} handler to call upon a disconnect
+         */
+        BasicConnection.prototype.onDisconnect = function(handler) {
+            this._disconnectHandler = handler;
+        }
+
+
+        /**
+         * Disconnects the plugin (= kills the forked process)
+         */
+        BasicConnection.prototype.disconnect = function() {
+            this._process.kill('SIGKILL');
+            this._disconnected = true;
+        }
+
+    }
+
+
     /**
      * Creates the platform-dependent BasicConnection object in the
      * web-browser environment
@@ -275,9 +402,13 @@ var __jailed__path__ = window.location.href + "jailed/";
     }
 
 
-    
-    initWeb();
-    basicConnectionWeb();
+    if (__is__node__) {
+        initNode();
+        basicConnectionNode();
+    } else {
+        initWeb();
+        basicConnectionWeb();
+    }
 
 
       
